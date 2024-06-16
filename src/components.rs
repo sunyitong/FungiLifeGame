@@ -1,7 +1,5 @@
 use bevy::prelude::*;
 use bevy::utils::HashSet;
-use rand::rngs::ThreadRng;
-use crate::init_data::*;
 
 /// bundle
 #[derive(Bundle)]
@@ -20,6 +18,10 @@ pub struct IsAlive (pub bool);
 
 #[derive(Component)]
 pub struct FoodConsumptionSpeed (pub i32);
+
+#[derive(Component)]
+pub struct Restriction;
+
 
 /// resources
 #[derive(Resource)]

@@ -14,7 +14,6 @@ use crate::systems::*;
 use crate::init_data::*;
 
 fn main() {
-    let mut rng = rand::thread_rng();
     App::new()
         .add_plugins((
             ScheduleRunnerPlugin::run_loop(Duration::from_secs_f64(
@@ -39,8 +38,7 @@ fn main() {
             }),
             LogDiagnosticsPlugin::default(),
             FrameTimeDiagnosticsPlugin))
-        .add_systems(Startup, setup)
-        .add_systems(Update, update_fungi)
-        .add_systems(PostUpdate, spawn_fungi)
+        .add_systems(Startup, (setup, init_restriction).chain())
+        .add_systems(Update, (update_fungi,spawn_fungi).chain())
         .run();
 }
