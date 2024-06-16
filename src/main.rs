@@ -41,6 +41,6 @@ fn main() {
             FrameTimeDiagnosticsPlugin))
         .add_systems(Startup, setup)
         .add_systems(Update, update_fungi)
-        .add_systems(PostUpdate,spawn_fungi)
+        .add_systems(PostUpdate, spawn_fungi)
         .run();
 }

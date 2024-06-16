@@ -7,6 +7,7 @@ use crate::init_data::*;
 #[derive(Bundle)]
 pub struct Fungi {
     pub fungi_type: FungiDefault,
+    pub food_consumption_speed: FoodConsumptionSpeed,
     pub is_alive: IsAlive,
 }
 
@@ -16,6 +17,9 @@ pub struct FungiDefault;
 
 #[derive(Component)]
 pub struct IsAlive (pub bool);
+
+#[derive(Component)]
+pub struct FoodConsumptionSpeed (pub i32);
 
 /// resources
 #[derive(Resource)]
