@@ -9,6 +9,13 @@ pub struct Fungi {
     pub is_alive: IsAlive,
 }
 
+#[derive(Bundle)]
+pub struct Light {
+    pub light_type: LightDefault,
+    pub open_counting: OpenCounting,
+    pub is_alive: IsAlive,
+}
+
 /// components
 #[derive(Component)]
 pub struct FungiDefault;
@@ -22,6 +29,12 @@ pub struct FoodConsumptionSpeed (pub i32);
 #[derive(Component)]
 pub struct Restriction;
 
+#[derive(Component)]
+pub struct LightDefault;
+
+#[derive(Component)]
+pub struct OpenCounting(pub u32);
+
 
 /// resources
 #[derive(Resource)]
@@ -31,16 +44,10 @@ pub  struct GridFood(pub Vec<Vec<i32>>);
 pub struct GridRestriction(pub Vec<Vec<i32>>);
 
 #[derive(Resource)]
-pub struct GridIdealShape(pub Vec<Vec<i32>>);
-
-#[derive(Resource)]
-pub struct GridBoundary(pub Vec<Vec<i32>>);
-
-#[derive(Resource)]
 pub struct FungiSpawnPositionList(pub HashSet<(i32, i32)>);
 
 #[derive(Resource)]
 pub struct FungiExistPositionList(pub HashSet<(i32, i32)>);
 
 #[derive(Resource)]
-pub struct FungiTextureHandle(pub Handle<Image>);
+pub struct PixelImageHandle(pub Handle<Image>);

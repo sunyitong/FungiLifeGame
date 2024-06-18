@@ -1,3 +1,4 @@
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 mod components;
 mod systems;
 mod init_data;
@@ -5,7 +6,7 @@ mod init_data;
 use bevy::{
     prelude::*,
     window::{PresentMode, WindowTheme},
-    diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin}
+    log::LogPlugin,
 };
 
 use crate::systems::*;
@@ -13,7 +14,7 @@ use crate::init_data::*;
 
 fn main() {
     App::new()
-        .add_plugins((
+        .add_plugins(
             DefaultPlugins.set(
                 WindowPlugin { 
                     primary_window: Some(Window {
@@ -30,10 +31,15 @@ fn main() {
                     ..default()
                 }),
                 ..default()
-            }),
-            LogDiagnosticsPlugin::default(),
-            FrameTimeDiagnosticsPlugin))
+            }).set(
+                LogPlugin {
+                    level: bevy::log::Level::INFO,
+                    ..default()
+                }
+            )
+        )
         .add_systems(Startup, (setup, init_restriction).chain())
         .add_systems(Update, (update_fungi,spawn_fungi).chain())
+        .add_systems(Update, (update_light,sort_light_path).chain())
         .run();
 }

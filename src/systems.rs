@@ -4,6 +4,11 @@ use crate::components::*;
 use crate::init_data::*;
 use rand::Rng;
 use image::{GenericImageView, Pixel};
+use bevy::render::render_asset::RenderAssetUsages;
+use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
+use ndarray::Array2;
+use ndarray_stats::DeviationExt;
+use std::collections:: VecDeque;
 
 
 fn process_image_to_restriction(
@@ -59,34 +64,46 @@ pub fn setup(
     init_fungi_hashset.insert((256, 256));
 
     let mut restriction = vec![vec![0; CANVAS_SIZE]; CANVAS_SIZE];
-    fill_square(&mut restriction, 200, 220, 250,150, false);
-    // process_image_to_restriction(
-    //     RESTRICTION_IMAGE,
-    //     1,
-    //     255,
-    //     &mut restriction,
-    //     CANVAS_SIZE,
-    // );
+    // fill_square(&mut restriction, 200, 220, 250,150, false);
+    process_image_to_restriction(
+        RESTRICTION_IMAGE,
+        1,
+        255,
+        &mut restriction,
+        CANVAS_SIZE,
+    );
 
     commands.spawn(Camera2dBundle{
         transform: Transform::from_xyz((CANVAS_SIZE/2) as f32, (CANVAS_SIZE/2) as f32, 0.0),
         ..default()
     });
-    let sprite_handle:Handle<Image> = asset_server.load(FUNGI_IMAGE_PATH);
-    commands.insert_resource(FungiTextureHandle(sprite_handle.clone()));
+
+    let pixel_image = Image::new_fill(
+        Extent3d {
+            width: 1,
+            height: 1,
+            depth_or_array_layers: 1,
+        },
+        TextureDimension::D2,
+        &[255, 255, 255, 255],
+        TextureFormat::Rgba8UnormSrgb,
+        RenderAssetUsages::RENDER_WORLD,
+    );
+
+    let pixel_sprite_handle:Handle<Image> = asset_server.add(pixel_image);
+
+    commands.insert_resource(PixelImageHandle(pixel_sprite_handle));
     commands.insert_resource(ClearColor(Color::rgb(BACKGROUND_COLOR.0, BACKGROUND_COLOR.1, BACKGROUND_COLOR.2)));
     commands.insert_resource(FungiSpawnPositionList(init_fungi_hashset));
     commands.insert_resource(FungiExistPositionList(HashSet::new()));
     commands.insert_resource(GridFood(vec![vec![100; CANVAS_SIZE]; CANVAS_SIZE]));
     commands.insert_resource(GridRestriction(restriction));
-    // commands.insert_resource(GridBoundary(green_channel));
-    // commands.insert_resource(GridIdealShape(blue_channel));
 }
 
 pub fn init_restriction(
     mut commands: Commands,
     restriction: Res<GridRestriction>,
-    fungi_sprite: Res<FungiTextureHandle>
+    fungi_sprite: Res<PixelImageHandle>
 ){
     for (x, row) in restriction.0.iter().enumerate() {
         for (y, value) in row.iter().enumerate() {
@@ -108,6 +125,8 @@ pub fn init_restriction(
 }
 
 pub fn update_fungi(
+    mut commands: Commands,
+    fungi_sprite: Res<PixelImageHandle>,
     mut fungi_spawn_position_list: ResMut<FungiSpawnPositionList>,
     mut grid_food: ResMut<GridFood>,
     restriction: Res<GridRestriction>,
@@ -137,6 +156,22 @@ pub fn update_fungi(
 
             if restriction.0[new_x as usize][new_y as usize] == 0 {
                 fungi_spawn_position_list.0.insert((new_x, new_y));
+            } else {
+                commands.spawn((
+                    SpriteBundle {
+                    sprite: Sprite {
+                        color: Color::rgba(LIGHT_COLOR.0, LIGHT_COLOR.1, LIGHT_COLOR.2, 1.0),
+                        ..default()
+                    },
+                    texture: fungi_sprite.0.clone(),
+                    transform: Transform::from_xyz(new_x as f32, new_y as f32, 0.0),
+                    ..default()
+                }, Light {
+                    light_type: LightDefault,
+                    open_counting: OpenCounting(LIGHT_LIFE_TIME),
+                    is_alive: IsAlive(true)
+                }
+                ));
             }
 
             // food consumption
@@ -166,7 +201,7 @@ pub fn spawn_fungi(
     mut commands: Commands,
     mut fungi_spawn_position_list: ResMut<FungiSpawnPositionList>,
     mut fungi_exist_position_list: ResMut<FungiExistPositionList>,
-    fungi_sprite: Res<FungiTextureHandle>
+    fungi_sprite: Res<PixelImageHandle>
 ) {
     if !fungi_spawn_position_list.0.is_empty() {
         for pos in fungi_spawn_position_list.0.drain() {
@@ -188,4 +223,80 @@ pub fn spawn_fungi(
             }
         }
     }
+}
+
+pub fn update_light(
+    mut light: Query<(&mut IsAlive, &mut OpenCounting, &mut Sprite), With<LightDefault>>,
+){
+    for (mut is_alive, mut open_counting, mut sprite) in light.iter_mut() {
+        if is_alive.0 {
+            open_counting.0 -= 1;
+            if open_counting.0 <= 0 {
+                is_alive.0 = false;
+                sprite.color = Color::rgba(0.5, 0.0, 0.5, 1.0);
+            }
+        }
+    }
+}
+
+pub fn sort_light_path(
+    light: Query<(&IsAlive, &Transform), With<LightDefault>>,
+){
+    let mut active_light_list: Vec<[f32;2]> = Vec::new();
+
+    for (is_alive, position) in light.iter(){
+        if is_alive.0 {
+            active_light_list.push([position.translation.x, position.translation.y]);
+        }
+    }
+    // info!("active light list length is: {}", active_light_list.len());
+    // info!("{:?}", active_light_list);
+    let components = find_connected_components(&active_light_list, LIGHT_PATH_SORT_THRESHOLD);
+    info!("{}", components.len());
+}
+
+fn find_connected_components(points: &Vec<[f32;2]>, threshold: f32) -> Vec<Vec<usize>> {
+    let n = points.len();
+    let mut distances = Array2::<f32>::zeros((n, n));
+    for i in 0..n {
+        for j in 0..n {
+            distances[[i, j]] = ((points[i][0] - points[j][0]).powi(2) + (points[i][1] - points[j][1]).powi(2)).sqrt();
+        }
+    }
+
+    let mut graph = vec![vec![]; n];
+    for i in 0..n {
+        for j in 0..n {
+            if distances[[i, j]] < threshold {
+                graph[i].push(j);
+            }
+        }
+    }
+
+    let mut visited = vec![false; n];
+    let mut components = Vec::new();
+    for i in 0..n {
+        if !visited[i] {
+            let component = bfs(i, &graph, &mut visited);
+            components.push(component);
+        }
+    }
+    components
+}
+
+fn bfs(start: usize, graph: &Vec<Vec<usize>>, visited: &mut Vec<bool>) -> Vec<usize> {
+    let mut queue = VecDeque::new();
+    let mut component = Vec::new();
+    queue.push_back(start);
+    visited[start] = true;
+    while let Some(node) = queue.pop_front() {
+        component.push(node);
+        for &neighbor in &graph[node] {
+            if !visited[neighbor] {
+                visited[neighbor] = true;
+                queue.push_back(neighbor);
+            }
+        }
+    }
+    component
 }
