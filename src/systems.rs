@@ -74,6 +74,7 @@ pub fn setup(
     });
     let sprite_handle:Handle<Image> = asset_server.load(FUNGI_IMAGE_PATH);
     commands.insert_resource(FungiTextureHandle(sprite_handle.clone()));
+    commands.insert_resource(ClearColor(Color::rgb(BACKGROUND_COLOR.0, BACKGROUND_COLOR.1, BACKGROUND_COLOR.2)));
     commands.insert_resource(FungiSpawnPositionList(init_fungi_hashset));
     commands.insert_resource(FungiExistPositionList(HashSet::new()));
     commands.insert_resource(GridFood(vec![vec![100; CANVAS_SIZE]; CANVAS_SIZE]));
@@ -112,6 +113,7 @@ pub fn update_fungi(
     restriction: Res<GridRestriction>,
     mut fungi: Query<(&Transform, &mut IsAlive, &FoodConsumptionSpeed, &mut Sprite), With<FungiDefault>>,
 ){
+    let mut rng = rand::thread_rng();
     for (transform, mut is_alive, food_consumption_speed, mut sprite) in fungi.iter_mut(){
         
         // is alive
@@ -119,8 +121,14 @@ pub fn update_fungi(
             let x = transform.translation.x as usize;
             let y = transform.translation.y as usize;
 
+            // random death
+            if rng.gen::<f32>() < 0.0004 {
+                is_alive.0 = false;
+                sprite.color = Color::rgba(DEAD_RANDOM_FUNGI_COLOR.0, DEAD_RANDOM_FUNGI_COLOR.1, DEAD_RANDOM_FUNGI_COLOR.2, 1.0);
+                continue;
+            }
+
             // spawn new fungi
-            let mut rng = rand::thread_rng();
             let dx = rng.gen_range(-1..=1);
             let dy = rng.gen_range(-1..=1);
 
@@ -147,7 +155,6 @@ pub fn update_fungi(
                 } else {
                     sprite.color = Color::rgba(ALIVE_FUNGI_COLOR_3.0 , ALIVE_FUNGI_COLOR_3.1, ALIVE_FUNGI_COLOR_3.2, 1.0);
                 }
-                // sprite.color = Color::rgba(grid_food.0[x][y] as f32 / 100.0 , 0.0, 0.0, 1.0);
             } else {
                 sprite.color = Color::rgba(DEAD_FUNGI_COLOR.0, DEAD_FUNGI_COLOR.1, DEAD_FUNGI_COLOR.2, 1.0);
             }
