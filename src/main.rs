@@ -5,9 +5,7 @@ mod init_data;
 use bevy::{
     prelude::*,
     window::{PresentMode, WindowTheme},
-    diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
-    app::ScheduleRunnerPlugin,
-    utils::Duration
+    diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin}
 };
 
 use crate::systems::*;
@@ -16,9 +14,6 @@ use crate::init_data::*;
 fn main() {
     App::new()
         .add_plugins((
-            ScheduleRunnerPlugin::run_loop(Duration::from_secs_f64(
-                1.0 / 30.0,
-            )),
             DefaultPlugins.set(
                 WindowPlugin { 
                     primary_window: Some(Window {

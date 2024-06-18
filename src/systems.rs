@@ -3,6 +3,35 @@ use bevy::utils::HashSet;
 use crate::components::*;
 use crate::init_data::*;
 use rand::Rng;
+use image::{GenericImageView, Pixel};
+
+
+fn process_image_to_restriction(
+    file_path: &str,
+    channel_index: usize,
+    target_value: u8,
+    restriction: &mut Vec<Vec<i32>>,
+    canvas_size: usize,
+) {
+    let img = image::open(file_path).expect("Failed to open image");
+
+    let (width, height) = img.dimensions();
+    assert!(width == canvas_size as u32 && height == canvas_size as u32, "Image dimensions do not match canvas size");
+
+    for x in 0..width {
+        for y in 0..height {
+            let pixel = img.get_pixel(x, y);
+            let channels = pixel.channels();
+
+            let new_y = canvas_size - 1 - y as usize;
+
+            if channels[channel_index] == target_value {
+                restriction[x as usize][new_y] = 1;
+            }
+        }
+    }
+}
+
 
 fn fill_square(grid: &mut Vec<Vec<i32>>, start_x: usize, start_y: usize, x_length: usize, y_length: usize, fill: bool) {
     let canvas_size = grid.len(); 
@@ -30,7 +59,14 @@ pub fn setup(
     init_fungi_hashset.insert((256, 256));
 
     let mut restriction = vec![vec![0; CANVAS_SIZE]; CANVAS_SIZE];
-    fill_square(&mut restriction, 220, 200, 20,150, false);
+    fill_square(&mut restriction, 200, 220, 250,150, false);
+    // process_image_to_restriction(
+    //     RESTRICTION_IMAGE,
+    //     1,
+    //     255,
+    //     &mut restriction,
+    //     CANVAS_SIZE,
+    // );
 
     commands.spawn(Camera2dBundle{
         transform: Transform::from_xyz((CANVAS_SIZE/2) as f32, (CANVAS_SIZE/2) as f32, 0.0),
@@ -57,7 +93,7 @@ pub fn init_restriction(
                 commands.spawn((
                     SpriteBundle {
                     sprite: Sprite {
-                        color: Color::rgba(0.0, 1.0, 0.0, 1.0),
+                        color: Color::rgba(RESTRICTION_COLOR.0, RESTRICTION_COLOR.1, RESTRICTION_COLOR.2, 1.0),
                         ..default()
                     },
                     texture: fungi_sprite.0.clone(),
@@ -104,26 +140,18 @@ pub fn update_fungi(
 
             // display fungi status
             if is_alive.0 {
-                sprite.color = Color::rgba(grid_food.0[x][y] as f32 / 100.0 , 0.0, 0.0, 1.0);
+                if  70 < grid_food.0[x][y] && grid_food.0[x][y] <= 100 {
+                    sprite.color = Color::rgba(ALIVE_FUNGI_COLOR_1.0 , ALIVE_FUNGI_COLOR_1.1, ALIVE_FUNGI_COLOR_1.2, 1.0);
+                } else if  30 < grid_food.0[x][y] && grid_food.0[x][y] <= 70 {
+                    sprite.color = Color::rgba(ALIVE_FUNGI_COLOR_2.0 , ALIVE_FUNGI_COLOR_2.1, ALIVE_FUNGI_COLOR_2.2, 1.0);
+                } else {
+                    sprite.color = Color::rgba(ALIVE_FUNGI_COLOR_3.0 , ALIVE_FUNGI_COLOR_3.1, ALIVE_FUNGI_COLOR_3.2, 1.0);
+                }
+                // sprite.color = Color::rgba(grid_food.0[x][y] as f32 / 100.0 , 0.0, 0.0, 1.0);
             } else {
-                sprite.color = Color::rgba(0.0, 0.0, 1.0, 1.0);
+                sprite.color = Color::rgba(DEAD_FUNGI_COLOR.0, DEAD_FUNGI_COLOR.1, DEAD_FUNGI_COLOR.2, 1.0);
             }
         }
-
-
-        // let mut x = transform.translation.x as i32;
-        // let mut y = transform.translation.y as i32;
-
-        // let mut rng = rand::thread_rng();
-        // let dx = rng.gen_range(-1..=1);
-        // let dy = rng.gen_range(-1..=1);
-
-        // x += dx;
-        // y += dy;
-
-        // fungi_spawn_position_list.0.insert((x,y));
-
-        // sprite.color = Color::rgba(0.1, 0.0, 0.0, 1.0);
     }
 }
 
@@ -138,7 +166,7 @@ pub fn spawn_fungi(
             if !fungi_exist_position_list.0.contains(&pos) {
                 commands.spawn((SpriteBundle {
                     sprite: Sprite {
-                        color: Color::rgba(1.0, 1.0, 1.0, 1.0),
+                        color: Color::rgba(NEWBORN_FUNGI_COLOR.0, NEWBORN_FUNGI_COLOR.1, NEWBORN_FUNGI_COLOR.2, 1.0),
                         ..default()
                     },
                     texture: fungi_sprite.0.clone(),
