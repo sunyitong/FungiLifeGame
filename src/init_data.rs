@@ -4,7 +4,7 @@ pub const RESTRICTION_IMAGE: &str = "./assets/images/shape_test_1.png";
 
 
 // camera configutation
-pub const CAMERA_SCALE: f32 = 0.3; // window resolution = CANVAS_SIZE x CAMERA_SCALE
+pub const CAMERA_SCALE: f32 = 0.2; // window resolution = CANVAS_SIZE x CAMERA_SCALE
 
 
 // fungi step distance
