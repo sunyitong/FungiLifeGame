@@ -7,9 +7,11 @@ use image::{GenericImageView, Pixel};
 use bevy::render::render_asset::RenderAssetUsages;
 use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
 use ndarray::Array2;
-use ndarray_stats::DeviationExt;
 use std::collections:: VecDeque;
-
+use bevy::core_pipeline::{
+        bloom::{BloomCompositeMode, BloomSettings, BloomPrefilterSettings},
+        tonemapping::Tonemapping,
+    };
 
 fn process_image_to_restriction(
     file_path: &str,
@@ -73,10 +75,26 @@ pub fn setup(
         CANVAS_SIZE,
     );
 
-    commands.spawn(Camera2dBundle{
+    commands.spawn((Camera2dBundle{
+        camera: Camera {
+            hdr: true, 
+            ..default()
+        },
         transform: Transform::from_xyz((CANVAS_SIZE/2) as f32, (CANVAS_SIZE/2) as f32, 0.0),
         ..default()
-    });
+        },
+        BloomSettings{
+            intensity: 0.7,
+            low_frequency_boost: 0.7,
+            low_frequency_boost_curvature: 0.95,
+            high_pass_frequency: 1.0,
+            prefilter_settings: BloomPrefilterSettings {
+                threshold: 0.6,
+                threshold_softness: 0.2,
+            },
+            composite_mode: BloomCompositeMode::Additive,
+        },
+    ));
 
     let pixel_image = Image::new_fill(
         Extent3d {
@@ -252,7 +270,12 @@ pub fn sort_light_path(
     // info!("active light list length is: {}", active_light_list.len());
     // info!("{:?}", active_light_list);
     let components = find_connected_components(&active_light_list, LIGHT_PATH_SORT_THRESHOLD);
-    info!("{}", components.len());
+    // info!("----------start-----------");
+    // info!("{}", components.len());
+    // info!("{:?}", active_light_list);
+    // info!("----------middle-----------");
+    // info!("{:?}", components);
+    // info!("----------end-----------");
 }
 
 fn find_connected_components(points: &Vec<[f32;2]>, threshold: f32) -> Vec<Vec<usize>> {
