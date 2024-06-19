@@ -66,18 +66,23 @@ pub fn setup(
     init_fungi_hashset.insert((256, 256));
 
     let mut restriction = vec![vec![0; CANVAS_SIZE]; CANVAS_SIZE];
-    // fill_square(&mut restriction, 200, 220, 250,150, false);
-    process_image_to_restriction(
-        RESTRICTION_IMAGE,
-        1,
-        255,
-        &mut restriction,
-        CANVAS_SIZE,
-    );
+    fill_square(&mut restriction, 190, 200, 150,90, false);
+    // process_image_to_restriction(
+    //     RESTRICTION_IMAGE,
+    //     1,
+    //     255,
+    //     &mut restriction,
+    //     CANVAS_SIZE,
+    // );
 
     commands.spawn((Camera2dBundle{
         camera: Camera {
             hdr: true, 
+            ..default()
+        },
+        tonemapping: Tonemapping::TonyMcMapface,
+        projection: OrthographicProjection {
+            scale: CAMERA_SCALE,
             ..default()
         },
         transform: Transform::from_xyz((CANVAS_SIZE/2) as f32, (CANVAS_SIZE/2) as f32, 0.0),
@@ -98,12 +103,12 @@ pub fn setup(
 
     let pixel_image = Image::new_fill(
         Extent3d {
-            width: 1,
-            height: 1,
+            width: (SPRITE_PIXEL_VALUES.len()/8) as u32,
+            height: (SPRITE_PIXEL_VALUES.len()/8) as u32,
             depth_or_array_layers: 1,
         },
         TextureDimension::D2,
-        &[255, 255, 255, 255],
+        &SPRITE_PIXEL_VALUES,
         TextureFormat::Rgba8UnormSrgb,
         RenderAssetUsages::RENDER_WORLD,
     );
@@ -114,7 +119,7 @@ pub fn setup(
     commands.insert_resource(ClearColor(Color::rgb(BACKGROUND_COLOR.0, BACKGROUND_COLOR.1, BACKGROUND_COLOR.2)));
     commands.insert_resource(FungiSpawnPositionList(init_fungi_hashset));
     commands.insert_resource(FungiExistPositionList(HashSet::new()));
-    commands.insert_resource(GridFood(vec![vec![100; CANVAS_SIZE]; CANVAS_SIZE]));
+    commands.insert_resource(GridFood(vec![vec![100.0; CANVAS_SIZE]; CANVAS_SIZE]));
     commands.insert_resource(GridRestriction(restriction));
 }
 
@@ -166,8 +171,8 @@ pub fn update_fungi(
             }
 
             // spawn new fungi
-            let dx = rng.gen_range(-1..=1);
-            let dy = rng.gen_range(-1..=1);
+            let dx = rng.gen_range(-FUNGI_STEP_DISTANCE..=FUNGI_STEP_DISTANCE);
+            let dy = rng.gen_range(-FUNGI_STEP_DISTANCE..=FUNGI_STEP_DISTANCE);
 
             let new_x = x as i32 + dx;
             let new_y = y as i32 + dy;
@@ -194,16 +199,16 @@ pub fn update_fungi(
 
             // food consumption
             grid_food.0[x][y] -= food_consumption_speed.0;
-            if grid_food.0[x][y] <= 0 {
+            if grid_food.0[x][y] <= 0.0 {
                 is_alive.0 = false;
-                grid_food.0[x][y] = 0;
+                grid_food.0[x][y] = 0.0;
             }
 
             // display fungi status
             if is_alive.0 {
-                if  70 < grid_food.0[x][y] && grid_food.0[x][y] <= 100 {
+                if  70.0 < grid_food.0[x][y] && grid_food.0[x][y] <= 100.0 {
                     sprite.color = Color::rgba(ALIVE_FUNGI_COLOR_1.0 , ALIVE_FUNGI_COLOR_1.1, ALIVE_FUNGI_COLOR_1.2, 1.0);
-                } else if  30 < grid_food.0[x][y] && grid_food.0[x][y] <= 70 {
+                } else if  30.0 < grid_food.0[x][y] && grid_food.0[x][y] <= 70.0 {
                     sprite.color = Color::rgba(ALIVE_FUNGI_COLOR_2.0 , ALIVE_FUNGI_COLOR_2.1, ALIVE_FUNGI_COLOR_2.2, 1.0);
                 } else {
                     sprite.color = Color::rgba(ALIVE_FUNGI_COLOR_3.0 , ALIVE_FUNGI_COLOR_3.1, ALIVE_FUNGI_COLOR_3.2, 1.0);
@@ -224,17 +229,22 @@ pub fn spawn_fungi(
     if !fungi_spawn_position_list.0.is_empty() {
         for pos in fungi_spawn_position_list.0.drain() {
             if !fungi_exist_position_list.0.contains(&pos) {
+                let mut rng = rand::thread_rng();
                 commands.spawn((SpriteBundle {
                     sprite: Sprite {
                         color: Color::rgba(NEWBORN_FUNGI_COLOR.0, NEWBORN_FUNGI_COLOR.1, NEWBORN_FUNGI_COLOR.2, 1.0),
                         ..default()
                     },
                     texture: fungi_sprite.0.clone(),
-                    transform: Transform::from_xyz(pos.0 as f32, pos.1 as f32, 0.0),
+                    transform: Transform {
+                        translation: Vec3::new(pos.0 as f32, pos.1 as f32, 0.0,), 
+                        scale: Vec3::new(SPRITE_SCALIING, SPRITE_SCALIING, 1.0),
+                        ..default()
+                    },
                     ..default()
                 },Fungi {
                     fungi_type: FungiDefault,
-                    food_consumption_speed: FoodConsumptionSpeed(1),
+                    food_consumption_speed: FoodConsumptionSpeed(rng.gen_range(0.8..1.2)),
                     is_alive: IsAlive(true),
                 }));
                 fungi_exist_position_list.0.insert(pos);
