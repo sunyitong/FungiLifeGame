@@ -84,13 +84,13 @@ pub fn setup(
         ..default()
         },
         BloomSettings{
-            intensity: 0.7,
-            low_frequency_boost: 0.7,
-            low_frequency_boost_curvature: 0.95,
-            high_pass_frequency: 1.0,
+            intensity: LIGHT_INTENSITY,
+            low_frequency_boost: LOW_FREQUENCY_BOOST,
+            low_frequency_boost_curvature: LOW_FREQUENCY_BOOST_CURVATURE,
+            high_pass_frequency: HIGH_PASS_FREQUENCY,
             prefilter_settings: BloomPrefilterSettings {
-                threshold: 0.6,
-                threshold_softness: 0.2,
+                threshold: THRESHOLD,
+                threshold_softness: THRESHOLD_SOFTNESS,
             },
             composite_mode: BloomCompositeMode::Additive,
         },
