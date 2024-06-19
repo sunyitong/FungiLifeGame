@@ -3,6 +3,22 @@ pub const CANVAS_SIZE: usize = 512;
 pub const RESTRICTION_IMAGE: &str = "./assets/images/shape_test_1.png";
 
 
+// camera configutation
+pub const CAMERA_SCALE: f32 = 0.2; // window resolution = CANVAS_SIZE x CAMERA_SCALE
+
+
+// fungi step distance
+pub const FUNGI_STEP_DISTANCE: i32 = 1;
+
+//fungi sprite configuration
+pub const SPRITE_SCALIING: f32 = 1.0;
+pub const SPRITE_PIXEL_VALUES:[u8;16] = 
+    [
+    255,255,255,255, 255,255,255,255,
+    50,50,50,255,    50,50,50,255,
+    ]; //[R,G,B,A] x width x height
+
+
 // light configuration
 pub const LIGHT_PATH_SORT_THRESHOLD: f32 = 10.0;
 pub const LIGHT_LIFE_TIME: u32 = 20;
