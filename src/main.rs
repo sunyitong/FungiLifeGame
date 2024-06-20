@@ -1,4 +1,4 @@
-// #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 mod components;
 mod systems;
 mod init_data;
@@ -40,6 +40,7 @@ fn main() {
         )
         .add_systems(Startup, (setup, init_restriction).chain())
         .add_systems(Update, (update_fungi,spawn_fungi).chain())
-        .add_systems(Update, (update_light,sort_light_path).chain())
+        .add_systems(Update, (update_light).chain())
+        // .add_systems(PostUpdate, screenshot_on_spacebar)
         .run();
 }

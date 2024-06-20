@@ -12,6 +12,9 @@ use bevy::core_pipeline::{
         bloom::{BloomCompositeMode, BloomSettings, BloomPrefilterSettings},
         tonemapping::Tonemapping,
     };
+use bevy::render::view::screenshot::ScreenshotManager;
+use bevy::window::PrimaryWindow;
+
 
 fn process_image_to_restriction(
     file_path: &str,
@@ -63,17 +66,17 @@ pub fn setup(
     asset_server: Res<AssetServer>,
 ) {
     let mut init_fungi_hashset= HashSet::new();
-    init_fungi_hashset.insert((256, 256));
+    init_fungi_hashset.insert(FUNGI_INIT_POSITION);
 
     let mut restriction = vec![vec![0; CANVAS_SIZE]; CANVAS_SIZE];
-    fill_square(&mut restriction, 190, 200, 150,90, false);
-    // process_image_to_restriction(
-    //     RESTRICTION_IMAGE,
-    //     1,
-    //     255,
-    //     &mut restriction,
-    //     CANVAS_SIZE,
-    // );
+    // fill_square(&mut restriction, 190, 200, 150,90, false);
+    process_image_to_restriction(
+        RESTRICTION_IMAGE,
+        1,
+        255,
+        &mut restriction,
+        CANVAS_SIZE,
+    );
 
     commands.spawn((Camera2dBundle{
         camera: Camera {
@@ -261,7 +264,7 @@ pub fn update_light(
             open_counting.0 -= 1;
             if open_counting.0 <= 0 {
                 is_alive.0 = false;
-                sprite.color = Color::rgba(0.5, 0.0, 0.5, 1.0);
+                sprite.color = Color::rgba(0.0, 0.0, 0.0, 0.0);
             }
         }
     }
@@ -332,4 +335,16 @@ fn bfs(start: usize, graph: &Vec<Vec<usize>>, visited: &mut Vec<bool>) -> Vec<us
         }
     }
     component
+}
+
+pub fn screenshot_on_spacebar(
+    main_window: Query<Entity, With<PrimaryWindow>>,
+    mut screenshot_manager: ResMut<ScreenshotManager>,
+    mut counter: Local<u32>,
+) {
+    let path = format!("./screenshot/sc/screenshot-{}.png", *counter);
+    *counter += 1;
+    screenshot_manager
+        .save_screenshot_to_disk(main_window.single(), path)
+        .unwrap();
 }
